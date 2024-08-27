@@ -1,6 +1,6 @@
 ﻿using HMS.Dto;
 using HMS.Dto.Models;
-using HMS.EmailService;
+//using HMS.EmailService;
 using HMS.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,16 +16,16 @@ namespace HMS.Controllers.Api
         readonly AppRepository _appRepository;
         readonly ILogger _logger;
         readonly IConfiguration _configuration;
-        private readonly IMailService _mailService;
+       // private readonly IMailService _mailService;
         private readonly IWebHostEnvironment _env;
 
-        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IMailService mailService, IWebHostEnvironment env) : base()
-       // public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env) : base()
+        //public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IMailService mailService, IWebHostEnvironment env) : base()
+        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env) : base()
         {
             _appRepository = (AppRepository?)appRepository;
             _logger = logger;
             _configuration = appConfig;
-            _mailService = mailService;
+           // _mailService = mailService;
             _env = env;
         }
 

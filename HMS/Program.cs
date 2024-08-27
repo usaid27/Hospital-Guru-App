@@ -1,5 +1,5 @@
 using HMS.DataContext;
-using HMS.EmailService;
+//using HMS.EmailService;
 using HMS.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -79,7 +79,7 @@ builder.Services.AddLogging();
 builder.Services.AddScoped<BaseRepository>();
 builder.Services.AddScoped<IAppRepository, AppRepository>();
 builder.Services.AddControllers();
-builder.Services.AddScoped<IMailService, MailService>();
+//builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
