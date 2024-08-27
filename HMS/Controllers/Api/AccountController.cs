@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using HMS.Dto.Auth;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -40,13 +41,18 @@ namespace HMS.Controllers.Api
 
         // User login and return JWT token
         [HttpPost("login")]
-        public async Task<IActionResult> Login(string email, string password)
+        public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            var result = await _signInManager.PasswordSignInAsync(email, password, false, lockoutOnFailure: false);
+            if (model == null)
+            {
+                return BadRequest("Invalid client request");
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, false, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(email);
+                var user = await _userManager.FindByEmailAsync(model.Email);
                 var token = GenerateJwtToken(user);
 
                 return Ok(new { Token = token });
@@ -54,6 +60,7 @@ namespace HMS.Controllers.Api
 
             return Unauthorized("Invalid login attempt");
         }
+
 
         // Logout the user
         [HttpPost("logout")]

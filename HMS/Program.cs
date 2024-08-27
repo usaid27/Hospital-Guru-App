@@ -49,6 +49,15 @@ else
     });
 }
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin",
+        builder => builder.WithOrigins("http://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod());
+});
+
 // Configure Identity for Auth Database
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDbContext>()
@@ -111,6 +120,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();  // Enable authentication
 app.UseAuthorization();
+
+// Use CORS policy
+app.UseCors("AllowSpecificOrigin");
 
 app.MapControllers();
 
