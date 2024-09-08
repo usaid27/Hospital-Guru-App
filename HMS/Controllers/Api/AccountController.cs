@@ -1,4 +1,5 @@
 ﻿using HMS.Dto.Auth;
+using HMS.EmailService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,14 @@ namespace HMS.Controllers.Api
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IConfiguration _configuration;
+       // private readonly IMailService _mailService;
 
         public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
+          //  _mailService = mailService;
         }
 
         // Register a new user
@@ -72,21 +75,35 @@ namespace HMS.Controllers.Api
 
         // Forgot password: generate a reset token and send via email
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(string email)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
+            if (!ModelState.IsValid)
             {
-                // Don't reveal that the user does not exist or is not confirmed
                 return BadRequest("Invalid request");
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+            {
+                return BadRequest("Email not confirmed");
             }
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            // Here you would send the token via email to the user
-            // For now, we'll just return it for demonstration purposes
-            return Ok(new { Token = resetToken });
+            // Send the reset token via email
+            var resetUrl = $"{_configuration["ClientUrl"]}/reset-password?email={model.Email}&token={resetToken}";
+            var message = $"<p>To reset your password, <a href='{resetUrl}'>click here</a>.</p>";
+           // await _mailService.SendEmailAsync(model.Email, "Password Reset", message);
+
+            return Ok("Password reset email sent.");
         }
+
+
 
         // Reset password using the reset token
         [HttpPost("reset-password")]
@@ -106,6 +123,7 @@ namespace HMS.Controllers.Api
 
             return BadRequest(result.Errors);
         }
+
 
         // Generate JWT Token for authenticated user
         private string GenerateJwtToken(IdentityUser user)

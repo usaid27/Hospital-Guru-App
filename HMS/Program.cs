@@ -1,4 +1,7 @@
 using HMS.DataContext;
+using HMS.Dto;
+using HMS.EmailService;
+
 //using HMS.EmailService;
 using HMS.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -83,12 +86,13 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
 });
-
+// Bind MailSettings from configuration
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("EmailSettings"));
+//builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddLogging();
 builder.Services.AddScoped<BaseRepository>();
 builder.Services.AddScoped<IAppRepository, AppRepository>();
 builder.Services.AddControllers();
-//builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

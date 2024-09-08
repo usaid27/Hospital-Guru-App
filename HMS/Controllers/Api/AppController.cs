@@ -16,7 +16,7 @@ namespace HMS.Controllers.Api
         readonly AppRepository _appRepository;
         readonly ILogger _logger;
         readonly IConfiguration _configuration;
-       // private readonly IMailService _mailService;
+        // private readonly IMailService _mailService;
         private readonly IWebHostEnvironment _env;
 
         //public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IMailService mailService, IWebHostEnvironment env) : base()
@@ -25,7 +25,7 @@ namespace HMS.Controllers.Api
             _appRepository = (AppRepository?)appRepository;
             _logger = logger;
             _configuration = appConfig;
-           // _mailService = mailService;
+            // _mailService = mailService;
             _env = env;
         }
 
@@ -118,10 +118,39 @@ namespace HMS.Controllers.Api
         #region Doctors
         [HttpPost]
         [Route("UpsertDoctorsDetails")]
-        public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails(DoctorsDto data)
+        public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails(
+        [FromForm] int id,
+        [FromForm] string name,
+        [FromForm] string specialization,
+        [FromForm] IFormFile? image,
+        [FromForm] string createdBy,
+        [FromForm] string modifiedBy,
+        [FromForm] DateTime createdOn,
+        [FromForm] DateTime modifiedOn)
         {
-            return await _appRepository.UpsertDoctorsDetails(data);
+            // Create a new DoctorsDto object
+            var doctorDto = new DoctorsDto
+            {
+                Id = id,
+                Name = name,
+                Specialization = specialization,
+                CreatedBy = createdBy,
+                ModifiedBy = modifiedBy,
+                CreatedOn = createdOn,
+                ModifiedOn = modifiedOn
+            };
+
+            // Convert IFormFile to byte array
+            if (image != null)
+            {
+                using var memoryStream = new MemoryStream();
+                await image.CopyToAsync(memoryStream);
+                doctorDto.Image = memoryStream.ToArray();
+            }
+
+            return await _appRepository.UpsertDoctorsDetails(doctorDto);
         }
+
 
         [HttpGet]
         [Route("Doctor/{id}")]

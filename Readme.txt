@@ -11,3 +11,7 @@ Use Package manager to run following command
 		   in HMS.DataContext project.
 		   also check ConnectionString in appsetting.json file
 
+
+
+
+Add-Migration InitAuth -context IoT_AutoDbContext2 
