@@ -30,4 +30,10 @@
     <Folder Include="Data\" />
   </ItemGroup>
 
+	<!-- Exclude appsettings.json and appsettings.Development.json from publishing -->
+	<ItemGroup>
+		<Content Remove="appsettings.json" />
+		<Content Remove="appsettings.Development.json" />
+	</ItemGroup>
+	
 </Project>
