@@ -7,17 +7,10 @@ using System.Threading.Tasks;
 
 namespace HMS.Dto.Auth
 {
-    class ResetPassword
+    public class ForgetPassword
     {
         [Required]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; }
-
-        [Required]
-        public string NewPassword { get; set; }
-
-        [Required]
-        [Compare("NewPassword", ErrorMessage = "Confirm password should match with the New Password")]
-        public string ConfirmedPassword { get; set; }
     }
 }

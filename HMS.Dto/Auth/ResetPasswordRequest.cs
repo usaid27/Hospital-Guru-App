@@ -10,7 +10,7 @@ namespace HMS.Dto.Auth
     public class ResetPasswordRequest
     {
         [Required]
-        public string Code { get; set; }
+        public string Token { get; set; }
 
         [Required]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]

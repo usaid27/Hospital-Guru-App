@@ -1,11 +1,11 @@
 using HMS.DataContext;
+using HMS.DataContext.Models;
 using HMS.Dto;
-using HMS.EmailService;
-
-//using HMS.EmailService;
 using HMS.Repositories;
+using HMS.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -54,19 +54,55 @@ else
     });
 }
 
-// Add CORS policy
+// Read allowed origins from configuration
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+
+// Configure CORS to allow multiple domains
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin",
-        builder => builder.WithOrigins("http://localhost:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod());
+    options.AddPolicy("AllowSpecificOrigins",
+        policyBuilder => policyBuilder
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
+// Configure EmailSender
+builder.Services.AddTransient<IEmailSender>(provider =>
+{
+    var config = builder.Configuration.GetSection("EmailSettings");
+    var smtpServer = config["SmtpHost"];
+    var smtpPort = int.Parse(config["SmtpPort"]);
+    var smtpUser = config["SmtpUser"];
+    var smtpPass = config["SmtpPass"];
+    var logger = provider.GetRequiredService<ILogger<EmailSender>>();
+    return new EmailSender(smtpServer, smtpPort, smtpUser, smtpPass, logger);
 });
 
 // Configure Identity for Auth Database
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    // Password settings
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = false;
+
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
+    options.Lockout.MaxFailedAccessAttempts = 10;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // User settings
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -._@+";
+    options.User.RequireUniqueEmail = true;
+});
+
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>

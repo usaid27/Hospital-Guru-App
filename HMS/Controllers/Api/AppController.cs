@@ -3,8 +3,19 @@ using HMS.Dto.Models;
 //using HMS.EmailService;
 using HMS.Repositories;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
+using Mysqlx.Crud;
+using Mysqlx.Expr;
+using Mysqlx.Session;
 using System;
+using static Mysqlx.Error.Types;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 
 namespace HMS.Controllers.Api
 {
@@ -28,29 +39,13 @@ namespace HMS.Controllers.Api
             // _mailService = mailService;
             _env = env;
         }
-
-        #region Details
+        #region Test
         [HttpGet]
-        [Route("details/{id}")]
-        public async Task<Details> GetDetailsById(int id)
-        {
-            return await _appRepository.GetDetailsById(id);
-        }
-
-        [HttpGet]
-        [Route("all-details")]
+        [Route("ping")]
         [AllowAnonymous]
-        public async Task<IEnumerable<Details>> GetAllDetails()
+        public async Task<bool>Ping()
         {
-            return await _appRepository.GetAllDetails();
-        }
-
-        [HttpPost]
-        [Route("UpsertDetails")]
-        public async Task<Details> UpsertDetails(Details details)
-        {
-
-            return await _appRepository.UpsertDetails(details);
+            return true;
         }
         #endregion
 
@@ -119,7 +114,6 @@ namespace HMS.Controllers.Api
         [HttpPost]
         [Route("UpsertDoctorsDetails")]
         public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails(
-        [FromForm] int id,
         [FromForm] string name,
         [FromForm] string specialization,
         [FromForm] IFormFile? image,
@@ -131,7 +125,6 @@ namespace HMS.Controllers.Api
             // Create a new DoctorsDto object
             var doctorDto = new DoctorsDto
             {
-                Id = id,
                 Name = name,
                 Specialization = specialization,
                 CreatedBy = createdBy,
@@ -161,11 +154,11 @@ namespace HMS.Controllers.Api
 
         [HttpGet]
         [Route("all-doctors")]
+        [AllowAnonymous]
         public async Task<IEnumerable<DoctorsDto>> GetAllDoctors()
         {
             return await _appRepository.GetAllDoctors();
         }
-
         [HttpPost]
         [Route("DeleteDoctor/{id}")]
         public async Task<ApiResponse<DoctorsDto>> DeleteDoctor(int id)
@@ -175,3 +168,5 @@ namespace HMS.Controllers.Api
         #endregion
     }
 }
+
+

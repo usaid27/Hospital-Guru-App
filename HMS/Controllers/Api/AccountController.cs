@@ -1,8 +1,11 @@
-﻿using HMS.Dto.Auth;
-using HMS.EmailService;
+﻿using HMS.DataContext.Models;
+using HMS.Dto.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,138 +17,289 @@ namespace HMS.Controllers.Api
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly IConfiguration _configuration;
-       // private readonly IMailService _mailService;
+        private readonly IEmailSender _emailSender;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
+        public AccountController(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole<Guid>> roleManager,
+            IConfiguration configuration,
+            IEmailSender emailSender,
+            ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _roleManager = roleManager;
             _configuration = configuration;
-          //  _mailService = mailService;
+            _emailSender = emailSender;
+            _logger = logger;
         }
 
-        // Register a new user
         [HttpPost("register")]
-        public async Task<IActionResult> Register(string email, string password)
+        public async Task<IActionResult> Register([FromBody] RegisterParameters model)
         {
-            var user = new IdentityUser { UserName = email, Email = email };
-            var result = await _userManager.CreateAsync(user, password);
-
-            if (result.Succeeded)
+            try
             {
-                return Ok("User registered successfully");
-            }
+                var user = new ApplicationUser
+                {
+                    UserName = model.UserName,
+                    Email = model.Email,
+                    PhoneNumber = model.MobileNo,
+                    IsActive = model.IsActive
+                };
 
-            return BadRequest(result.Errors);
+                // Attempt to create the user
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (result.Succeeded)
+                {
+                    // Directly set the email confirmation flag to true
+                    user.EmailConfirmed = true;
+                    await _userManager.UpdateAsync(user);
+
+                    // Retrieve the list of users
+                    var userCount = await _userManager.Users.CountAsync();
+
+                    string roleToAssign;
+
+                    if (userCount == 1)
+                    {
+                        // Assign "SuperAdmin" role to the first user
+                        roleToAssign = "SuperAdmin";
+                    }
+                    else
+                    {
+                        // Assign "User" role to subsequent users
+                        roleToAssign = "User";
+                    }
+
+                    // Ensure the role exists before assigning it
+                    if (!await _roleManager.RoleExistsAsync(roleToAssign))
+                    {
+                        var roleResult = await _roleManager.CreateAsync(new IdentityRole<Guid>(roleToAssign));
+                        if (!roleResult.Succeeded)
+                        {
+                            _logger.LogError($"Error creating role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
+                            return StatusCode(StatusCodes.Status500InternalServerError, "Failed to create role.");
+                        }
+                    }
+
+                    // Assign the role to the user
+                    await _userManager.AddToRoleAsync(user, roleToAssign);
+
+                    _logger.LogInformation($"User registered successfully: {model.Email}");
+                    return Ok("User registered successfully.");
+                }
+
+                _logger.LogWarning($"User registration failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                return BadRequest(result.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during registration");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
         }
 
-        // User login and return JWT token
+
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        public async Task<IActionResult> Login([FromBody] LoginParameters model)
         {
-            if (model == null)
+            try
             {
-                return BadRequest("Invalid client request");
+                var user = await _userManager.FindByEmailAsync(model.UserEmail);
+                if (user == null || !(await _userManager.CheckPasswordAsync(user, model.Password)))
+                {
+                    _logger.LogWarning("Invalid login attempt");
+                    return Unauthorized("Invalid login attempt");
+                }
+
+                var claims = new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(ClaimTypes.Email, user.Email)
+                };
+
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+                var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+                var token = new JwtSecurityToken(
+                    issuer: _configuration["Jwt:Issuer"],
+                    audience: _configuration["Jwt:Issuer"],
+                    claims: claims,
+                    expires: DateTime.Now.AddMinutes(30),
+                    signingCredentials: creds);
+
+                var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+                _logger.LogInformation($"User logged in successfully: {model.UserEmail}");
+
+                return Ok(new { Token = tokenString });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during login");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while logging in.");
+            }
+        }
 
-            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, false, lockoutOnFailure: false);
-
-            if (result.Succeeded)
+        [HttpPost("forgetpassword")]
+        public async Task<IActionResult> ForgetPassword([FromBody] ForgetPassword model)
+        {
+            try
             {
                 var user = await _userManager.FindByEmailAsync(model.Email);
-                var token = GenerateJwtToken(user);
+                if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+                {
+                    _logger.LogWarning($"Forget password request failed for {model.Email}: User not found or email not confirmed");
+                    return BadRequest("User not found or email not confirmed");
+                }
 
-                return Ok(new { Token = token });
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetLink = Url.Action("resetpassword", "Auth", new { token, email = model.Email }, Request.Scheme);
+
+                await _emailSender.SendEmailAsync(user.Email, "Reset Password", $"Please reset your password by clicking <a href='{resetLink}'>here</a>.");
+
+                _logger.LogInformation($"Password reset email sent to: {model.Email}");
+
+                return Ok("Password reset email sent.");
             }
-
-            return Unauthorized("Invalid login attempt");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during password reset request");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while sending the password reset email.");
+            }
         }
 
+        [HttpPost("resetpassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user == null)
+                {
+                    _logger.LogWarning($"Reset password failed for {model.Email}: User not found");
+                    return BadRequest("User not found");
+                }
 
-        // Logout the user
-        [HttpPost("logout")]
+                var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+                if (result.Succeeded)
+                {
+                    _logger.LogInformation($"Password reset successfully for: {model.Email}");
+                    return Ok("Password reset successfully");
+                }
+
+                _logger.LogWarning($"Password reset failed for {model.Email}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                return BadRequest(result.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during password reset");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while resetting the password.");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("ChangePassword")]
+        public async Task<IActionResult> ChangePassword(ChangePassword changePassword)
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(HttpContext.User);
+
+                if (user == null)
+                {
+                    return BadRequest("User not found");
+                }
+
+                // Check if the current password is correct
+                var passwordCheck = await _userManager.CheckPasswordAsync(user, changePassword.CurrentPassword);
+                if (!passwordCheck)
+                {
+                    return BadRequest("Invalid current password");
+                }
+
+                // Change the user's password
+                var changePasswordResult = await _userManager.ChangePasswordAsync(user, changePassword.CurrentPassword, changePassword.NewPassword);
+
+                if (changePasswordResult.Succeeded)
+                {
+                    return Ok("Password changed successfully");
+                }
+                else
+                {
+                    return BadRequest("Failed to change password");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it accordingly
+                return BadRequest($"Failed to change password: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("Logout")]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return Ok("User logged out successfully");
+            return Ok();
         }
 
-        // Forgot password: generate a reset token and send via email
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
+        [Authorize]
+        [HttpGet("UserCount")]
+        public async Task<IActionResult> UserCount()
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest("Invalid request");
-            }
+            var userCount = await _userManager.Users.CountAsync();
+            return Ok(new { Count = userCount });
+        }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateUserRole(UserViewModel userViewModel)
+        {
+            var user = await _userManager.FindByIdAsync(userViewModel.Id.ToString());
+
             if (user == null)
             {
-                return BadRequest("User not found");
+                return NotFound();
             }
 
-            if (!await _userManager.IsEmailConfirmedAsync(user))
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // Remove all roles from the user
+            var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, roles);
+            if (!removeRolesResult.Succeeded)
             {
-                return BadRequest("Email not confirmed");
+                return BadRequest(removeRolesResult.Errors.FirstOrDefault()?.Description);
             }
 
-            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            // Send the reset token via email
-            var resetUrl = $"{_configuration["ClientUrl"]}/reset-password?email={model.Email}&token={resetToken}";
-            var message = $"<p>To reset your password, <a href='{resetUrl}'>click here</a>.</p>";
-           // await _mailService.SendEmailAsync(model.Email, "Password Reset", message);
-
-            return Ok("Password reset email sent.");
-        }
-
-
-
-        // Reset password using the reset token
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(string email, string token, string newPassword)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
+            // Add the new role to the user
+            var role = await _roleManager.FindByNameAsync(userViewModel.Role);
+            if (role == null)
             {
-                return BadRequest("Invalid request");
+                role = new IdentityRole<Guid>(userViewModel.Role);
+                var createRoleResult = await _roleManager.CreateAsync(role);
+                if (!createRoleResult.Succeeded)
+                {
+                    return BadRequest(createRoleResult.Errors.FirstOrDefault()?.Description);
+                }
             }
 
-            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
-            if (result.Succeeded)
+            var addRoleResult = await _userManager.AddToRoleAsync(user, userViewModel.Role);
+            if (!addRoleResult.Succeeded)
             {
-                return Ok("Password has been reset successfully");
+                return BadRequest(addRoleResult.Errors.FirstOrDefault()?.Description);
             }
 
-            return BadRequest(result.Errors);
-        }
-
-
-        // Generate JWT Token for authenticated user
-        private string GenerateJwtToken(IdentityUser user)
-        {
-            var claims = new[]
-            {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id)
-        };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return Ok();
         }
     }
 }
