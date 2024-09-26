@@ -1,6 +1,7 @@
 ﻿using System.Net.Mail;
 using System.Net;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using MySqlX.XDevAPI;
 
 namespace HMS.Service
 {
@@ -33,8 +34,8 @@ namespace HMS.Service
                 message.Body = htmlMessage;
 
                 smtp.EnableSsl = true;
-                smtp.UseDefaultCredentials = false;
                 smtp.Credentials = new NetworkCredential(_smtpUser, _smtpPass);
+                smtp.UseDefaultCredentials = false;
 
                 try
                 {

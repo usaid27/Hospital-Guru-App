@@ -71,26 +71,117 @@ namespace HMS.Repositories
             var result = new ApiResponse<HospitalDto>();
             try
             {
-
                 if (data == null)
                 {
-                    result.IsSuccess = true;
-                    result.Message = "Invalid Hall data!";
+                    result.IsSuccess = false;
+                    result.Message = "Invalid hospital data!";
                     return result;
                 }
 
                 if (data.Id > 0)
                 {
-                    AppDbCxt.HospitalDto.Update(data);
-                    result.Message = "Data Successfully Updated.";
+                    // Get the existing hospital from the database
+                    var existingHospital = await AppDbCxt.HospitalDto
+                        .Include(h => h.MedicalCoreAndSpecialities)
+                        .Include(h => h.OtherSpecialities).ThenInclude(os => os.SpecialitiesNames)
+                        .FirstOrDefaultAsync(h => h.Id == data.Id);
+
+                    if (existingHospital == null)
+                    {
+                        result.IsSuccess = false;
+                        result.Message = "Hospital not found!";
+                        return result;
+                    }
+
+                    // Update Hospital fields
+                    AppDbCxt.Entry(existingHospital).CurrentValues.SetValues(data);
+
+                    // Handle MedicalCoreAndSpecialities
+                    foreach (var medicalCore in data.MedicalCoreAndSpecialities)
+                    {
+                        var existingMedicalCore = existingHospital.MedicalCoreAndSpecialities
+                            .FirstOrDefault(m => m.Id == medicalCore.Id);
+
+                        if (existingMedicalCore != null)
+                        {
+                            // Update existing
+                            AppDbCxt.Entry(existingMedicalCore).CurrentValues.SetValues(medicalCore);
+                        }
+                        else
+                        {
+                            // Add new
+                            existingHospital.MedicalCoreAndSpecialities.Add(medicalCore);
+                        }
+                    }
+                    // Remove cores that are not present in the incoming data
+                    foreach (var medicalCore in existingHospital.MedicalCoreAndSpecialities.ToList())
+                    {
+                        if (!data.MedicalCoreAndSpecialities.Any(m => m.Id == medicalCore.Id))
+                        {
+                            AppDbCxt.MedicalCoreAndSpecialities.Remove(medicalCore);
+                        }
+                    }
+
+                    // Handle OtherSpecialities
+                    foreach (var otherSpeciality in data.OtherSpecialities)
+                    {
+                        var existingOtherSpeciality = existingHospital.OtherSpecialities
+                            .FirstOrDefault(os => os.Id == otherSpeciality.Id);
+
+                        if (existingOtherSpeciality != null)
+                        {
+                            // Update existing
+                            AppDbCxt.Entry(existingOtherSpeciality).CurrentValues.SetValues(otherSpeciality);
+
+                            // Handle SpecialitiesNames within OtherSpecialities
+                            foreach (var specialityName in otherSpeciality.SpecialitiesNames)
+                            {
+                                var existingSpecialityName = existingOtherSpeciality.SpecialitiesNames
+                                    .FirstOrDefault(sn => sn.Id == specialityName.Id);
+
+                                if (existingSpecialityName != null)
+                                {
+                                    AppDbCxt.Entry(existingSpecialityName).CurrentValues.SetValues(specialityName);
+                                }
+                                else
+                                {
+                                    existingOtherSpeciality.SpecialitiesNames.Add(specialityName);
+                                }
+                            }
+                            // Remove speciality names that are not present in the incoming data
+                            foreach (var specialityName in existingOtherSpeciality.SpecialitiesNames.ToList())
+                            {
+                                if (!otherSpeciality.SpecialitiesNames.Any(sn => sn.Id == specialityName.Id))
+                                {
+                                    AppDbCxt.SpecialitiesNames.Remove(specialityName);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Add new OtherSpecialities
+                            existingHospital.OtherSpecialities.Add(otherSpeciality);
+                        }
+                    }
+                    // Remove OtherSpecialities that are not present in the incoming data
+                    foreach (var otherSpeciality in existingHospital.OtherSpecialities.ToList())
+                    {
+                        if (!data.OtherSpecialities.Any(os => os.Id == otherSpeciality.Id))
+                        {
+                            AppDbCxt.OtherSpecialities.Remove(otherSpeciality);
+                        }
+                    }
+
+                    result.Message = "Data successfully updated.";
                 }
                 else
                 {
+                    // Add new hospital
                     AppDbCxt.HospitalDto.Add(data);
-                    result.Message = "Data Successfully Inserted.";
+                    result.Message = "Data successfully inserted.";
                 }
 
-                AppDbCxt.SaveChanges();
+                await AppDbCxt.SaveChangesAsync();
                 result.IsSuccess = true;
                 result.Result = data;
                 return result;
@@ -103,16 +194,18 @@ namespace HMS.Repositories
             }
         }
 
+
         public async Task<HospitalDto> GetHospitalById(int id)
         {
-            HospitalDto result = null;
+            // Use Include to load related entities
+            var result = await AppDbCxt.HospitalDto
+                .Include(h => h.MedicalCoreAndSpecialities) // Include Medical Core Specialities
+                .Include(h => h.OtherSpecialities) // Include Other Specialities
+                .FirstOrDefaultAsync(o => o.Id == id); // Use FirstOrDefaultAsync for async operation
 
-#pragma warning disable CS8600
-            result = AppDbCxt.HospitalDto.FirstOrDefault(o => o.Id == id);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-            return await Task.FromResult(result);
+            return result; // No need for Task.FromResult, await handles it
         }
+
 
         public async Task<IEnumerable<HospitalDto>> GetAllHospitals()
         {
@@ -151,7 +244,6 @@ namespace HMS.Repositories
         }
 
         #endregion
-
 
         #region Procedures
         public async Task<ApiResponse<ProcedureDto>> UpsertProceduresDetails(ProcedureDto data)
@@ -240,7 +332,6 @@ namespace HMS.Repositories
         }
 
         #endregion
-
 
         #region Doctors
         public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails(DoctorsDto data)

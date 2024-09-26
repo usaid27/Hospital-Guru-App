@@ -161,10 +161,18 @@ namespace HMS.Controllers.Api
                     return BadRequest("User not found or email not confirmed");
                 }
 
+                // Generate password reset token
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetLink = Url.Action("resetpassword", "Auth", new { token, email = model.Email }, Request.Scheme);
 
-                await _emailSender.SendEmailAsync(user.Email, "Reset Password", $"Please reset your password by clicking <a href='{resetLink}'>here</a>.");
+                // Read ClientAppBaseUrl from configuration
+                var clientAppBaseUrl = _configuration["ClientAppBaseUrl"];
+
+                // Construct reset password link with the ReactJS app URL
+                var resetLink = $"{clientAppBaseUrl}/Resetpassword?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(model.Email)}";
+
+                // Send email with reset password link
+                await _emailSender.SendEmailAsync(user.Email, "Reset Password",
+                    $"Please reset your password by clicking <a href='{resetLink}'>here</a>.");
 
                 _logger.LogInformation($"Password reset email sent to: {model.Email}");
 
@@ -176,6 +184,7 @@ namespace HMS.Controllers.Api
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while sending the password reset email.");
             }
         }
+
 
         [HttpPost("resetpassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
@@ -253,7 +262,7 @@ namespace HMS.Controllers.Api
             return Ok();
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("UserCount")]
         public async Task<IActionResult> UserCount()
         {
@@ -262,7 +271,7 @@ namespace HMS.Controllers.Api
         }
 
         [Authorize(Roles = "SuperAdmin,Admin")]
-        [HttpPost]
+        [HttpPost("UpdateUserRole")]
         public async Task<IActionResult> UpdateUserRole(UserViewModel userViewModel)
         {
             var user = await _userManager.FindByIdAsync(userViewModel.Id.ToString());
@@ -300,6 +309,24 @@ namespace HMS.Controllers.Api
             }
 
             return Ok();
+        }
+
+        [HttpGet("GetUsers")]
+        // [Authorize]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userManager.Users.ToListAsync();
+
+            var userViewModels = users.Select(u => new UserViewModel
+            {
+                Id = u.Id,
+                UserName = u.UserName,
+                Email = u.Email,
+                Role = _userManager.GetRolesAsync(u).Result.FirstOrDefault(),
+                IsActive = u.IsActive,
+            }).ToList();
+
+            return Ok(userViewModels);
         }
     }
 }
