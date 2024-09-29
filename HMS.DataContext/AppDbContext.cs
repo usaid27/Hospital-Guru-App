@@ -25,22 +25,7 @@ namespace HMS.DataContext
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure relationships using Fluent API
-
-            modelBuilder.Entity<MedicalcoreAndSpecialities>()
-                .HasOne(m => m.Hospital) // Navigation property in MedicalcoreAndSpecialities
-                .WithMany(h => h.MedicalCoreAndSpecialities) // Navigation property in HospitalDto
-                .HasForeignKey(m => m.HospitalDtoId); // Foreign key
-
-            modelBuilder.Entity<OtherSpecialities>()
-                .HasOne(o => o.Hospital) // Navigation property in OtherSpecialities
-                .WithMany(h => h.OtherSpecialities) // Navigation property in HospitalDto
-                .HasForeignKey(o => o.HospitalDtoId); // Foreign key
-
-            modelBuilder.Entity<SpecialitiesName>()
-                .HasOne(s => s.OtherSpeciality) // Navigation property in SpecialitiesName
-                .WithMany(o => o.SpecialitiesNames) // Navigation property in OtherSpecialities
-                .HasForeignKey(s => s.OtherSpecialityId); // Foreign key
+           
         }
     }
 }

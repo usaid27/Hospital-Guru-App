@@ -40,7 +40,7 @@ namespace HMS.Controllers.Api
         #region Hospitals
         [HttpPost]
         [Route("UpsertHospitalDetails")]
-        public async Task<ApiResponse<HospitalDto>> UpsertHospitalDetails(HospitalDto data)
+        public async Task<ApiResponse<HospitalDto>> UpsertHospitalDetails([FromBody] HospitalDto data)
         {
             return await _appRepository.UpsertHospitalDetails(data);
         }

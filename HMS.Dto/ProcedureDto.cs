@@ -30,6 +30,8 @@ public class ProcedureDto : Auditable
 
 public class ReferenceLinks : BaseEntity
 {
+    public int ProcedureId {  get; set; }    
+
     [Url] 
     public string? Link { get; set; }
 }

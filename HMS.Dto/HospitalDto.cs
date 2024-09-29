@@ -5,8 +5,8 @@ public class HospitalDto : Auditable
 {
     public byte[]? ImageFile { get; set; }
 
-    [Required]
-    public string Name { get; set; } = string.Empty;
+    //[Required]
+    public string Name { get; set; } 
 
     public string? About { get; set; }
     public string? Infrastructure { get; set; }
@@ -17,10 +17,10 @@ public class HospitalDto : Auditable
 
     public string? AccreditationAndAwards { get; set; }
 
-    [Phone]
+    //[Phone]
     public string? Phone { get; set; }
 
-    [EmailAddress]
+    //[EmailAddress]
     public string? Email { get; set; }
 
     public string? ContactInfo { get; set; }
@@ -39,7 +39,7 @@ public class MedicalcoreAndSpecialities : BaseEntity
     public string CoreName { get; set; } = string.Empty;
 
     // Navigation property to access the related HospitalDto
-    public virtual HospitalDto Hospital { get; set; }
+    //public virtual HospitalDto Hospital { get; set; }
 }
 
 
@@ -49,7 +49,7 @@ public class OtherSpecialities : BaseEntity
     public string Speciality { get; set; } = string.Empty;
 
     // Navigation property
-    public virtual HospitalDto Hospital { get; set; }
+    //public virtual HospitalDto Hospital { get; set; }
 
     public virtual List<SpecialitiesName> SpecialitiesNames { get; set; } = new List<SpecialitiesName>();
 }
@@ -59,8 +59,7 @@ public class SpecialitiesName : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
 
-    // You might want to include a foreign key to OtherSpecialities if needed
     public int OtherSpecialityId { get; set; } // Foreign key to OtherSpecialities
-    public virtual OtherSpecialities OtherSpeciality { get; set; } // Navigation property
+    //public virtual OtherSpecialities OtherSpeciality { get; set; } 
 }
 
