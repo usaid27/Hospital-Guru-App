@@ -40,7 +40,7 @@ namespace HMS.Controllers.Api
         #region Hospitals
         [HttpPost]
         [Route("UpsertHospitalDetails")]
-        public async Task<ApiResponse<HospitalDto>> UpsertHospitalDetails([FromBody] HospitalDto data)
+        public async Task<ApiResponse<HospitalDto>> UpsertHospitalDetails([FromForm] HospitalDto data)
         {
             return await _appRepository.UpsertHospitalDetails(data);
         }
@@ -102,7 +102,7 @@ namespace HMS.Controllers.Api
         #region Doctors
         [HttpPost]
         [Route("UpsertDoctorsDetails")]
-        public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails([FromBody] DoctorsDto doctorsDto)
+        public async Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails([FromForm] DoctorsDto doctorsDto)
         {
             return await _appRepository.UpsertDoctorsDetails(doctorsDto);
         }
