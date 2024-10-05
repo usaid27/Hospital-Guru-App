@@ -9,7 +9,7 @@ namespace HMS.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class AppController : ControllerBase
     {
         readonly AppRepository _appRepository;
@@ -18,12 +18,12 @@ namespace HMS.Controllers.Api
         private readonly IEmailSender _emailSender;
         private readonly IWebHostEnvironment _env;
 
-        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env) : base()
+        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env, IEmailSender emailSender,) : base()
         {
             _appRepository = (AppRepository?)appRepository;
             _logger = logger;
             _configuration = appConfig;
-            // _mailService = mailService;
+            _emailSender = emailSender;
             _env = env;
         }
 
@@ -53,6 +53,7 @@ namespace HMS.Controllers.Api
             return await _appRepository.GetHospitalById(id);
         }
 
+        [Authorize]
         [HttpGet]
         [Route("all-hospitals")]
         public async Task<IEnumerable<HospitalDto>> GetAllHospitals()
@@ -127,6 +128,11 @@ namespace HMS.Controllers.Api
         {
             return await _appRepository.DeleteDoctor(id);
         }
+        #endregion
+
+        #region Contact Mail
+
+
         #endregion
     }
 }

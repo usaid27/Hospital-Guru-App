@@ -15,6 +15,7 @@ namespace HMS.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+   
     public class AccountController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -119,11 +120,23 @@ namespace HMS.Controllers.Api
                     return Unauthorized("Invalid login attempt");
                 }
 
+                // Check if user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning($"Inactive user {model.UserEmail} attempted to log in");
+                    return Unauthorized("User account is inactive");
+                }
+
+                // Retrieve roles for the user
+                var roles = await _userManager.GetRolesAsync(user);
+                var roleName = roles.FirstOrDefault();
+
                 var claims = new[]
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(ClaimTypes.Email, user.Email)
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Role, roleName)
                 };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
@@ -133,14 +146,14 @@ namespace HMS.Controllers.Api
                     issuer: _configuration["Jwt:Issuer"],
                     audience: _configuration["Jwt:Issuer"],
                     claims: claims,
-                    expires: DateTime.Now.AddMinutes(30),
+                    expires: DateTime.Now.AddDays(7),
                     signingCredentials: creds);
 
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
                 _logger.LogInformation($"User logged in successfully: {model.UserEmail}");
 
-                return Ok(new { Token = tokenString });
+                return Ok(new { Token = tokenString, Role = roleName });
             }
             catch (Exception ex)
             {
@@ -270,8 +283,8 @@ namespace HMS.Controllers.Api
             return Ok(new { Count = userCount });
         }
 
-        [Authorize(Roles = "SuperAdmin,Admin")]
         [HttpPost("UpdateUserRole")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> UpdateUserRole(UserViewModel userViewModel)
         {
             var user = await _userManager.FindByIdAsync(userViewModel.Id.ToString());
@@ -308,11 +321,22 @@ namespace HMS.Controllers.Api
                 return BadRequest(addRoleResult.Errors.FirstOrDefault()?.Description);
             }
 
+            // Update IsActive property
+            if (user.IsActive != userViewModel.IsActive)
+            {
+                user.IsActive = userViewModel.IsActive;
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    return BadRequest(updateResult.Errors.FirstOrDefault()?.Description);
+                }
+            }
+
             return Ok();
         }
 
         [HttpGet("GetUsers")]
-        // [Authorize]
+        [Authorize]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _userManager.Users.ToListAsync();
@@ -328,5 +352,34 @@ namespace HMS.Controllers.Api
 
             return Ok(userViewModels);
         }
+
+        [HttpGet("MyInfo")]
+        [Authorize]
+        public async Task<IActionResult> MyInfo()
+        {
+            var userEmail = HttpContext.User.Claims.ToList()[2].Value;
+            var user = await _userManager.FindByEmailAsync(userEmail);
+
+            if (user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            var userInfo = new UserInfo
+            {
+                IsAuthenticated = User.Identity.IsAuthenticated,
+                UserName = user.UserName,
+                ExposedClaims = User.Claims.ToDictionary(c => c.Type, c => c.Value),
+                Roles = userRoles.ToList(),
+                Email = user.Email,
+                MobileNo = user.PhoneNumber
+            };
+
+            return Ok(userInfo);
+        }
     }
 }
+
+
