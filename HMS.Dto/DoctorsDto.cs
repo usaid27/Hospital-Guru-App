@@ -1,5 +1,7 @@
 ﻿using HMS.Dto;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class DoctorsDto : Auditable
 {
@@ -13,6 +15,8 @@ public class DoctorsDto : Auditable
     public string? Membership { get; set; }
     public string? AccomplishmentOrAward { get; set; }
 
+    [NotMapped]
+    public IFormFile? ImageFormFile { get; set; }
     public byte[]? Image { get; set; }
 
     [Required]

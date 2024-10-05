@@ -78,6 +78,15 @@ namespace HMS.Repositories
                     return result;
                 }
 
+                if (data.ImageFormFile != null && data.ImageFormFile.Length > 0)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await data.ImageFormFile.CopyToAsync(memoryStream);
+                        data.ImageFile = memoryStream.ToArray(); // Convert to byte[]
+                    }
+                }
+
                 if (data.Id > 0)
                 {
                     // Get the existing hospital from the database
@@ -345,6 +354,15 @@ namespace HMS.Repositories
                     result.IsSuccess = true;
                     result.Message = "Invalid Hall data!";
                     return result;
+                }
+
+                if (data.ImageFormFile != null && data.ImageFormFile.Length > 0)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await data.ImageFormFile.CopyToAsync(memoryStream);
+                        data.Image = memoryStream.ToArray(); // Convert to byte[]
+                    }
                 }
 
                 if (data.Id > 0)

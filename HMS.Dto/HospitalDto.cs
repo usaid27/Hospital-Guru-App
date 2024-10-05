@@ -1,9 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using HMS.Dto;
+using Microsoft.AspNetCore.Http;
 
 public class HospitalDto : Auditable
 {
-    public byte[]? ImageFile { get; set; }
+     public byte[]? ImageFile { get; set; }
+    [NotMapped]
+    public IFormFile? ImageFormFile { get; set; }
 
     //[Required]
     public string Name { get; set; } 
