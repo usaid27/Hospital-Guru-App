@@ -268,6 +268,15 @@ namespace HMS.Repositories
                     return result;
                 }
 
+                if (data.ImageFormFile != null && data.ImageFormFile.Length > 0)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await data.ImageFormFile.CopyToAsync(memoryStream);
+                        data.IntroductionMedia = memoryStream.ToArray(); // Convert to byte[]
+                    }
+                }
+
                 if (data.Id > 0)
                 {
                     AppDbCxt.ProcedureDto.Update(data);
