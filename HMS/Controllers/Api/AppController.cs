@@ -18,7 +18,7 @@ namespace HMS.Controllers.Api
         private readonly IEmailSender _emailSender;
         private readonly IWebHostEnvironment _env;
 
-        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env, IEmailSender emailSender,) : base()
+        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env, IEmailSender emailSender) : base()
         {
             _appRepository = (AppRepository?)appRepository;
             _logger = logger;
@@ -72,10 +72,11 @@ namespace HMS.Controllers.Api
         #region Procedures
         [HttpPost]
         [Route("UpsertProceduresDetails")]
-        public async Task<ApiResponse<ProcedureDto>> UpsertProceduresDetails(ProcedureDto data)
+        public async Task<ApiResponse<ProcedureDto>> UpsertProceduresDetails([FromForm] ProcedureDto data)
         {
             return await _appRepository.UpsertProceduresDetails(data);
         }
+
 
         [HttpGet]
         [Route("Procedure/{id}")]
