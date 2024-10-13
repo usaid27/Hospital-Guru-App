@@ -437,6 +437,37 @@ namespace HMS.Repositories
         }
 
         #endregion
+
+        #region Contact
+        public async Task<bool> ContactDoctor(ContactDoctor contactDoctor)
+        {
+            try
+            {
+                AppDbCxt.ContactDoctors.Add(contactDoctor);
+                await AppDbCxt.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> ContactHospital(ContactHospital contactHospital)
+        {
+            try
+            {
+                AppDbCxt.ContactHospital.Add(contactHospital);
+                await AppDbCxt.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        #endregion
     }
 }
 

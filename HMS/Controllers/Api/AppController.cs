@@ -4,6 +4,7 @@ using HMS.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace HMS.Controllers.Api
 {
@@ -12,19 +13,23 @@ namespace HMS.Controllers.Api
     [Authorize]
     public class AppController : ControllerBase
     {
-        readonly AppRepository _appRepository;
+        readonly IAppRepository _appRepository;
         readonly ILogger _logger;
         readonly IConfiguration _configuration;
         private readonly IEmailSender _emailSender;
         private readonly IWebHostEnvironment _env;
+        private readonly string _contactEmail;
 
-        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env, IEmailSender emailSender,) : base()
+        public AppController(ILogger<AppController> logger, IConfiguration appConfig, IAppRepository appRepository, IWebHostEnvironment env, IEmailSender emailSender) : base()
         {
             _appRepository = (AppRepository?)appRepository;
             _logger = logger;
             _configuration = appConfig;
             _emailSender = emailSender;
             _env = env;
+
+            // Read the contact email from appsettings.json
+            _contactEmail = _configuration["ContactEmailSettings:ContactEmail"] ?? "default@example.com";
         }
 
         #region Test
@@ -132,8 +137,96 @@ namespace HMS.Controllers.Api
 
         #region Contact Mail
 
+        [HttpPost]
+        [Route("contact-doctor")]
+        public async Task<IActionResult> ContactDoctor([FromBody] ContactDoctor contactDoctor)
+        {
+            if (ModelState.IsValid)
+            {
+                var subject = $"Contact Request for Dr. {contactDoctor.DoctorName}";
+                var body = new StringBuilder();
+
+                // HTML-formatted email body
+                body.AppendLine("<h3>Doctor Contact Request</h3>");
+                body.AppendLine($"<p><strong>Doctor Name:</strong> {contactDoctor.DoctorName}</p>");
+                body.AppendLine($"<p><strong>Patient Name:</strong> {contactDoctor.PatientName}</p>");
+                body.AppendLine($"<p><strong>Mobile:</strong> {contactDoctor.PatientMobile}</p>");
+                if (!string.IsNullOrEmpty(contactDoctor.PatientEmail))
+                    body.AppendLine($"<p><strong>Email:</strong> {contactDoctor.PatientEmail}</p>");
+                if (!string.IsNullOrEmpty(contactDoctor.Subject))
+                    body.AppendLine($"<p><strong>Subject:</strong> {contactDoctor.Subject}</p>");
+                body.AppendLine($"<p><strong>Message:</strong><br /> {contactDoctor.Message}</p>");
+
+                try
+                {
+                    // Sending email
+                    await _emailSender.SendEmailAsync(_contactEmail, subject, body.ToString());
+
+                    // Save request to the database
+                    var isSaved = await _appRepository.ContactDoctor(contactDoctor);
+                    if (!isSaved)
+                    {
+                        return StatusCode(500, "Error saving the message.");
+                    }
+
+                    return Ok(new { Success = true, Message = "Your message has been sent to the doctor." });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to process contact doctor request: {ex.Message}");
+                    return StatusCode(500, "Error sending the message.");
+                }
+            }
+
+            return BadRequest(ModelState);
+        }
+
+        [HttpPost]
+        [Route("contact-hospital")]
+        public async Task<IActionResult> ContactHospital([FromBody] ContactHospital contactHospital)
+        {
+            if (ModelState.IsValid)
+            {
+                var subject = $"Contact Request for {contactHospital.HospitalName}";
+                var body = new StringBuilder();
+
+                // HTML-formatted email body
+                body.AppendLine("<h3>Hospital Contact Request</h3>");
+                body.AppendLine($"<p><strong>Hospital Name:</strong> {contactHospital.HospitalName}</p>");
+                body.AppendLine($"<p><strong>Patient Name:</strong> {contactHospital.Name}</p>");
+                body.AppendLine($"<p><strong>Mobile:</strong> {contactHospital.Mobile}</p>");
+                if (!string.IsNullOrEmpty(contactHospital.Email))
+                    body.AppendLine($"<p><strong>Email:</strong> {contactHospital.Email}</p>");
+                body.AppendLine($"<p><strong>Description:</strong><br /> {contactHospital.Description}</p>");
+
+                try
+                {
+                    // Sending email
+                    await _emailSender.SendEmailAsync(_contactEmail, subject, body.ToString());
+
+                    // Save request to the database
+                    var isSaved = await _appRepository.ContactHospital(contactHospital);
+                    if (!isSaved)
+                    {
+                        return StatusCode(500, "Error saving the message.");
+                    }
+
+                    return Ok(new { Success = true, Message = "Your message has been sent to the hospital." });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to process contact hospital request: {ex.Message}");
+                    return StatusCode(500, "Error sending the message.");
+                }
+            }
+
+            return BadRequest(ModelState);
+        }
 
         #endregion
+
+
+
     }
 }
 

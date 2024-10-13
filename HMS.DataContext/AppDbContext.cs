@@ -1,4 +1,5 @@
-﻿using HMS.Dto.Models;
+﻿using HMS.Dto;
+using HMS.Dto.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HMS.DataContext
@@ -20,6 +21,8 @@ namespace HMS.DataContext
         public DbSet<SpecialitiesName> SpecialitiesNames { get; set; } // Corrected naming to match convention
         public DbSet<ProcedureDto> ProcedureDto { get; set; }
         public DbSet<DoctorsDto> DoctorsDto { get; set; }
+        public DbSet<ContactDoctor> ContactDoctors {  get; set; }
+        public DbSet<ContactHospital> ContactHospital {  get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
