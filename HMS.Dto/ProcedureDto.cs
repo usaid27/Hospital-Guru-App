@@ -1,11 +1,15 @@
 ﻿using HMS.Dto;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class ProcedureDto : Auditable
 {
     [Required]
     public string ProcedureName { get; set; } = string.Empty;
 
+    [NotMapped]
+    public IFormFile? ImageFormFile { get; set; }
     public byte[]? IntroductionMedia { get; set; }
 
     [Required]

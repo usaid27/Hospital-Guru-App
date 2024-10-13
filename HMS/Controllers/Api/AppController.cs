@@ -77,10 +77,11 @@ namespace HMS.Controllers.Api
         #region Procedures
         [HttpPost]
         [Route("UpsertProceduresDetails")]
-        public async Task<ApiResponse<ProcedureDto>> UpsertProceduresDetails(ProcedureDto data)
+        public async Task<ApiResponse<ProcedureDto>> UpsertProceduresDetails([FromForm] ProcedureDto data)
         {
             return await _appRepository.UpsertProceduresDetails(data);
         }
+
 
         [HttpGet]
         [Route("Procedure/{id}")]
