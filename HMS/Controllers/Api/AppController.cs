@@ -53,14 +53,16 @@ namespace HMS.Controllers.Api
 
         [HttpGet]
         [Route("Hospital/{id}")]
+        [AllowAnonymous]
         public async Task<HospitalDto> GetHospitalById(int id)
         {
             return await _appRepository.GetHospitalById(id);
         }
 
-        [Authorize]
+       // [Authorize]
         [HttpGet]
         [Route("all-hospitals")]
+        [AllowAnonymous]
         public async Task<IEnumerable<HospitalDto>> GetAllHospitals()
         {
             return await _appRepository.GetAllHospitals();
@@ -85,6 +87,7 @@ namespace HMS.Controllers.Api
 
         [HttpGet]
         [Route("Procedure/{id}")]
+        [AllowAnonymous]
         public async Task<ProcedureDto> GetProcedureById(int id)
         {
             return await _appRepository.GetProcedureById(id);
@@ -92,6 +95,7 @@ namespace HMS.Controllers.Api
 
         [HttpGet]
         [Route("all-procedures")]
+        [AllowAnonymous]
         public async Task<IEnumerable<ProcedureDto>> GetAllProcedures()
         {
             return await _appRepository.GetAllProcedures();
@@ -116,6 +120,7 @@ namespace HMS.Controllers.Api
 
         [HttpGet]
         [Route("Doctor/{id}")]
+        [AllowAnonymous]
         public async Task<DoctorsDto> GetDoctorById(int id)
         {
             return await _appRepository.GetDoctorById(id);
@@ -140,6 +145,7 @@ namespace HMS.Controllers.Api
 
         [HttpPost]
         [Route("contact-doctor")]
+        [AllowAnonymous]
         public async Task<IActionResult> ContactDoctor([FromBody] ContactDoctor contactDoctor)
         {
             if (ModelState.IsValid)
@@ -184,6 +190,7 @@ namespace HMS.Controllers.Api
 
         [HttpPost]
         [Route("contact-hospital")]
+        [AllowAnonymous]
         public async Task<IActionResult> ContactHospital([FromBody] ContactHospital contactHospital)
         {
             if (ModelState.IsValid)
