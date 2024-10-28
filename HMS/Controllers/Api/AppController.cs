@@ -234,6 +234,38 @@ namespace HMS.Controllers.Api
         #endregion
 
 
+        #region ProceduresCatagory
+        [HttpPost]
+        [Route("UpsertProcedureCatagoryDetails")]
+        public async Task<ApiResponse<ProcedureCatagory>> UpsertProceduresCatagoryDetails([FromForm] ProcedureCatagory data)
+        {
+            return await _appRepository.UpsertProcedureCatagoryDetails(data.ProcedureCatagoryName);
+        }
+
+
+        [HttpGet]
+        [Route("ProcedureCatagory/{id}")]
+        [AllowAnonymous]
+        public async Task<ProcedureCatagory> GetProcedureCatagoryById(int id)
+        {
+            return await _appRepository.GetProcedureCatagoryById(id);
+        }
+
+        [HttpGet]
+        [Route("all-proceduresCatagory")]
+        [AllowAnonymous]
+        public async Task<IEnumerable<ProcedureCatagory>> GetAllProceduresCatagory()
+        {
+            return await _appRepository.GetAllProceduresCatagory();
+        }
+
+        [HttpPost]
+        [Route("DeleteProcedureCatagory/{id}")]
+        public async Task<ApiResponse<ProcedureCatagory>> DeleteProcedureCatagory(int id)
+        {
+            return await _appRepository.DeleteProcedureCatagory(id);
+        }
+        #endregion
 
     }
 }

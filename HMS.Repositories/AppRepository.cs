@@ -477,7 +477,89 @@ namespace HMS.Repositories
         }
 
         #endregion
+
+        #region ProcedureCatagory
+
+        public async Task<ApiResponse<ProcedureCatagory>> UpsertProcedureCatagoryDetails(string procedureCatagoryName)
+        {
+            var result = new ApiResponse<ProcedureCatagory>();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(procedureCatagoryName))
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Procedure Category Name is required!";
+                    return result;
+                }
+
+                var existingCategory = await AppDbCxt.ProcedureCatagory
+                    .FirstOrDefaultAsync(pc => pc.ProcedureCatagoryName == procedureCatagoryName);
+
+                if (existingCategory == null)
+                {
+                    var newCategory = new ProcedureCatagory { ProcedureCatagoryName = procedureCatagoryName };
+                    AppDbCxt.ProcedureCatagory.Add(newCategory); // Insert new category
+                    result.Message = "Procedure Category successfully inserted.";
+                }
+                else
+                {
+                    result.Message = "Procedure Category already exists.";
+                }
+
+                await AppDbCxt.SaveChangesAsync();
+                result.IsSuccess = true;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return result;
+            }
+        }
+
+        // Get Procedure Category by ID
+        public async Task<ProcedureCatagory> GetProcedureCatagoryById(int id)
+        {
+            return await AppDbCxt.ProcedureCatagory.FirstOrDefaultAsync(pc => pc.Id == id);
+        }
+
+        // Get all Procedure Categories
+        public async Task<IEnumerable<ProcedureCatagory>> GetAllProceduresCatagory()
+        {
+            return await AppDbCxt.ProcedureCatagory.ToListAsync();
+        }
+
+        // Delete Procedure Category by ID
+        public async Task<ApiResponse<ProcedureCatagory>> DeleteProcedureCatagory(int id)
+        {
+            var result = new ApiResponse<ProcedureCatagory>();
+            try
+            {
+                var category = await AppDbCxt.ProcedureCatagory.FirstOrDefaultAsync(pc => pc.Id == id);
+                if (category == null)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Procedure Category not found!";
+                    return result;
+                }
+
+                AppDbCxt.ProcedureCatagory.Remove(category);
+                await AppDbCxt.SaveChangesAsync();
+                result.IsSuccess = true;
+                result.Message = "Procedure Category successfully deleted.";
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return result;
+            }
+        }
     }
+    #endregion
+
 }
 
 
