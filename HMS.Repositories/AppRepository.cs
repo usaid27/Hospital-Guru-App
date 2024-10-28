@@ -316,7 +316,8 @@ namespace HMS.Repositories
         {
             IEnumerable<ProcedureDto> result = null;
 
-            result = AppDbCxt.ProcedureDto.ToList();
+            result = AppDbCxt.ProcedureDto.Include(o=>o.ProcedureDoctorMapping).ThenInclude(o=>o.Doctor)
+                .Include(o=>o.ProcedureHospitalMapping).ThenInclude(o=>o.Hospital).ToList();
             return result;
         }
 
@@ -403,7 +404,7 @@ namespace HMS.Repositories
             DoctorsDto result = null;
 
 #pragma warning disable CS8600
-            result = AppDbCxt.DoctorsDto.FirstOrDefault(o => o.Id == id);
+            result = AppDbCxt.DoctorsDto.Include(o=>o.DoctorEducation).FirstOrDefault(o => o.Id == id);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             return await Task.FromResult(result);
@@ -413,7 +414,7 @@ namespace HMS.Repositories
         {
             IEnumerable<DoctorsDto> result = null;
 
-            result = AppDbCxt.DoctorsDto.ToList();
+            result = AppDbCxt.DoctorsDto.Include(o=>o.DoctorEducation).ToList();
             return result;
         }
 
