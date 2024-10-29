@@ -10,13 +10,13 @@ public class HospitalDto : Auditable
     public IFormFile? ImageFormFile { get; set; }
 
     //[Required]
-    public string Name { get; set; } 
+    public string Name { get; set; } = string.Empty;
 
     public string? About { get; set; }
     public string? Infrastructure { get; set; }
     public string? TeamAndSpecialities { get; set; }
 
-    [Required]
+    //[Required]
     public string Location { get; set; } = string.Empty;
 
     public string? AccreditationAndAwards { get; set; }

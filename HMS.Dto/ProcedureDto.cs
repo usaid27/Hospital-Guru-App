@@ -45,12 +45,12 @@ public class ProcedureDoctorMapping : BaseEntity
 
     public int DoctorId { get; set; }
     public int ProcedureId { get; set; }
-    public virtual DoctorsDto? DoctorsDto { get; set; }
+    public virtual DoctorsDto ? Doctor { get; set; }
 }
 
 public class ProcedureHospitalMapping : BaseEntity  
 {
     public int HospitalId { get; set; }
     public int ProcedureId { get; set; }
-    public virtual HospitalDto? HospitalDto { get; set; }
+    public virtual HospitalDto ? Hospital { get; set; }
 }

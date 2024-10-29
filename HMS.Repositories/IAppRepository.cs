@@ -35,6 +35,10 @@ namespace HMS.Repositories
         Task<bool> ContactDoctor(ContactDoctor contactDoctor);
         Task<bool> ContactHospital(ContactHospital contactHospital);
 
+        Task<ProcedureTypes> GetProcedureTypesById(int id);
 
+        Task<IEnumerable<ProcedureTypes>> GetAllProcedureTypes();
+        Task<ApiResponse<ProcedureTypes>> UpsertProcedureTypes(ProcedureTypes data);
+        Task<ApiResponse<ProcedureTypes>> DeleteProcedureTypes(int id);
     }
 }

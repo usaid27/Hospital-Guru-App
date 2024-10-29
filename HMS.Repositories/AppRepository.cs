@@ -316,7 +316,8 @@ namespace HMS.Repositories
         {
             IEnumerable<ProcedureDto> result = null;
 
-            result = AppDbCxt.ProcedureDto.ToList();
+            result = AppDbCxt.ProcedureDto.Include(o=>o.ProcedureDoctorMapping).ThenInclude(o=>o.Doctor)
+                .Include(o=>o.ProcedureHospitalMapping).ThenInclude(o=>o.Hospital).ToList();
             return result;
         }
 
@@ -403,7 +404,7 @@ namespace HMS.Repositories
             DoctorsDto result = null;
 
 #pragma warning disable CS8600
-            result = AppDbCxt.DoctorsDto.FirstOrDefault(o => o.Id == id);
+            result = AppDbCxt.DoctorsDto.Include(o=>o.DoctorEducation).FirstOrDefault(o => o.Id == id);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             return await Task.FromResult(result);
@@ -413,7 +414,7 @@ namespace HMS.Repositories
         {
             IEnumerable<DoctorsDto> result = null;
 
-            result = AppDbCxt.DoctorsDto.ToList();
+            result = AppDbCxt.DoctorsDto.Include(o=>o.DoctorEducation).ToList();
             return result;
         }
 
@@ -478,32 +479,29 @@ namespace HMS.Repositories
 
         #endregion
 
-        #region ProcedureCatagory
 
-        public async Task<ApiResponse<ProcedureCatagory>> UpsertProcedureCatagoryDetails(string procedureCatagoryName)
+        #region ProcedureTypes
+        public async Task<ApiResponse<ProcedureTypes>> UpsertProcedureTypes(ProcedureTypes data)
         {
-            var result = new ApiResponse<ProcedureCatagory>();
+            var result = new ApiResponse<ProcedureTypes>();
             try
             {
-                if (string.IsNullOrWhiteSpace(procedureCatagoryName))
+                if (data == null)
                 {
                     result.IsSuccess = false;
-                    result.Message = "Procedure Category Name is required!";
+                    result.Message = "Invalid ProcedureTypes data!";
                     return result;
                 }
 
-                var existingCategory = await AppDbCxt.ProcedureCatagory
-                    .FirstOrDefaultAsync(pc => pc.ProcedureCatagoryName == procedureCatagoryName);
-
-                if (existingCategory == null)
+                if (data.Id > 0)
                 {
-                    var newCategory = new ProcedureCatagory { ProcedureCatagoryName = procedureCatagoryName };
-                    AppDbCxt.ProcedureCatagory.Add(newCategory); // Insert new category
-                    result.Message = "Procedure Category successfully inserted.";
+                    AppDbCxt.ProcedureType.Update(data);
+                    result.Message = "Data successfully updated.";
                 }
                 else
                 {
-                    result.Message = "Procedure Category already exists.";
+                    AppDbCxt.ProcedureType.Add(data);
+                    result.Message = "Data successfully inserted.";
                 }
 
                 await AppDbCxt.SaveChangesAsync();
@@ -518,36 +516,45 @@ namespace HMS.Repositories
             }
         }
 
-        // Get Procedure Category by ID
-        public async Task<ProcedureCatagory> GetProcedureCatagoryById(int id)
+
+
+        public async Task<ProcedureTypes> GetProcedureTypesById(int id)
         {
-            return await AppDbCxt.ProcedureCatagory.FirstOrDefaultAsync(pc => pc.Id == id);
+            // Use Include to load related entities
+            var result = await AppDbCxt.ProcedureType
+                       .FirstOrDefaultAsync(o => o.Id == id); // Use FirstOrDefaultAsync for async operation
+
+            return result; // No need for Task.FromResult, await handles it
         }
 
-        // Get all Procedure Categories
-        public async Task<IEnumerable<ProcedureCatagory>> GetAllProceduresCatagory()
+
+        public async Task<IEnumerable<ProcedureTypes>> GetAllProcedureTypes()
         {
-            return await AppDbCxt.ProcedureCatagory.ToListAsync();
+            IEnumerable<ProcedureTypes> result = null;
+
+            result = AppDbCxt.ProcedureType.ToList();
+            return result;
         }
 
-        // Delete Procedure Category by ID
-        public async Task<ApiResponse<ProcedureCatagory>> DeleteProcedureCatagory(int id)
+        public async Task<ApiResponse<ProcedureTypes>> DeleteProcedureTypes(int id)
         {
-            var result = new ApiResponse<ProcedureCatagory>();
+            var result = new ApiResponse<ProcedureTypes>();
             try
             {
-                var category = await AppDbCxt.ProcedureCatagory.FirstOrDefaultAsync(pc => pc.Id == id);
-                if (category == null)
+                var existing = AppDbCxt.ProcedureType.First(x => x.Id == id);
+                result.Result = existing;
+                if (existing == null)
                 {
-                    result.IsSuccess = false;
-                    result.Message = "Procedure Category not found!";
+                    result.IsSuccess = true;
+                    result.Message = "ProcedureTypes not found!";
                     return result;
                 }
 
-                AppDbCxt.ProcedureCatagory.Remove(category);
+                AppDbCxt.ProcedureType.Remove(existing);
                 await AppDbCxt.SaveChangesAsync();
                 result.IsSuccess = true;
-                result.Message = "Procedure Category successfully deleted.";
+                result.Message = "Successfully Deleted!";
+
                 return result;
             }
             catch (Exception ex)
