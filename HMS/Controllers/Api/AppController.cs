@@ -146,7 +146,7 @@ namespace HMS.Controllers.Api
         [HttpPost]
         [Route("contact-doctor")]
         [AllowAnonymous]
-        public async Task<IActionResult> ContactDoctor([FromBody] ContactDoctor contactDoctor)
+        public async Task<IActionResult> ContactDoctor([FromForm] ContactDoctor contactDoctor)
         {
             if (ModelState.IsValid)
             {
@@ -233,7 +233,38 @@ namespace HMS.Controllers.Api
 
         #endregion
 
+        #region ProceduresTypes
+        [HttpPost]
+        [Route("UpsertProceduresTypes")]
+        public async Task<ApiResponse<ProcedureTypes>> UpsertProceduresTypes([FromForm] ProcedureTypes data)
+        {
+            return await _appRepository.UpsertProcedureTypes(data);
+        }
 
+
+        [HttpGet]
+        [Route("ProceduresTypes/{id}")]
+        [AllowAnonymous]
+        public async Task<ProcedureTypes> GetProceduresTypesById(int id)
+        {
+            return await _appRepository.GetProcedureTypesById(id);
+        }
+
+        [HttpGet]
+        [Route("all-ProceduresTypess")]
+        [AllowAnonymous]
+        public async Task<IEnumerable<ProcedureTypes>> GetAllProceduresTypess()
+        {
+            return await _appRepository.GetAllProcedureTypes();
+        }
+
+        [HttpPost]
+        [Route("DeleteProcedureTypes/{id}")]
+        public async Task<ApiResponse<ProcedureTypes>> DeleteProcedureTypes(int id)
+        {
+            return await _appRepository.DeleteProcedureTypes(id);
+        }
+        #endregion
 
     }
 }

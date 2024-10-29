@@ -24,6 +24,7 @@ namespace HMS.DataContext
         public DbSet<DoctorsDto> DoctorsDto { get; set; }
         public DbSet<ContactDoctor> ContactDoctors {  get; set; }
         public DbSet<ContactHospital> ContactHospital {  get; set; }
+        public DbSet<ProcedureTypes> ProcedureType {  get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

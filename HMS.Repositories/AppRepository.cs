@@ -478,6 +478,91 @@ namespace HMS.Repositories
         }
 
         #endregion
+
+        #region ProcedureTypes
+        public async Task<ApiResponse<ProcedureTypes>> UpsertProcedureTypes(ProcedureTypes data)
+        {
+            var result = new ApiResponse<ProcedureTypes>();
+            try
+            {
+                if (data == null)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Invalid ProcedureTypes data!";
+                    return result;
+                }
+
+                if (data.Id > 0)
+                {
+                    AppDbCxt.ProcedureType.Update(data);
+                    result.Message = "Data successfully updated.";
+                }
+                else
+                {
+                    AppDbCxt.ProcedureType.Add(data);
+                    result.Message = "Data successfully inserted.";
+                }
+
+                await AppDbCxt.SaveChangesAsync();
+                result.IsSuccess = true;
+                result.Result = data;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return result;
+            }
+        }
+
+
+        public async Task<ProcedureTypes> GetProcedureTypesById(int id)
+        {
+            // Use Include to load related entities
+            var result = await AppDbCxt.ProcedureType
+                       .FirstOrDefaultAsync(o => o.Id == id); // Use FirstOrDefaultAsync for async operation
+
+            return result; // No need for Task.FromResult, await handles it
+        }
+
+
+        public async Task<IEnumerable<ProcedureTypes>> GetAllProcedureTypes()
+        {
+            IEnumerable<ProcedureTypes> result = null;
+
+            result = AppDbCxt.ProcedureType.ToList();
+            return result;
+        }
+
+        public async Task<ApiResponse<ProcedureTypes>> DeleteProcedureTypes(int id)
+        {
+            var result = new ApiResponse<ProcedureTypes>();
+            try
+            {
+                var existing = AppDbCxt.ProcedureType.First(x => x.Id == id);
+                result.Result = existing;
+                if (existing == null)
+                {
+                    result.IsSuccess = true;
+                    result.Message = "ProcedureTypes not found!";
+                    return result;
+                }
+
+                AppDbCxt.ProcedureType.Remove(existing);
+                await AppDbCxt.SaveChangesAsync();
+                result.IsSuccess = true;
+                result.Message = "Successfully Deleted!";
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return result;
+            }
+        }
+        #endregion
     }
 }
 
