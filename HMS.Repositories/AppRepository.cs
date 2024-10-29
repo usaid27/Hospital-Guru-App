@@ -479,6 +479,7 @@ namespace HMS.Repositories
 
         #endregion
 
+
         #region ProcedureTypes
         public async Task<ApiResponse<ProcedureTypes>> UpsertProcedureTypes(ProcedureTypes data)
         {
@@ -505,7 +506,6 @@ namespace HMS.Repositories
 
                 await AppDbCxt.SaveChangesAsync();
                 result.IsSuccess = true;
-                result.Result = data;
                 return result;
             }
             catch (Exception ex)
@@ -515,6 +515,7 @@ namespace HMS.Repositories
                 return result;
             }
         }
+
 
 
         public async Task<ProcedureTypes> GetProcedureTypesById(int id)
@@ -553,6 +554,7 @@ namespace HMS.Repositories
                 await AppDbCxt.SaveChangesAsync();
                 result.IsSuccess = true;
                 result.Message = "Successfully Deleted!";
+
                 return result;
             }
             catch (Exception ex)
@@ -562,8 +564,9 @@ namespace HMS.Repositories
                 return result;
             }
         }
-        #endregion
     }
+    #endregion
+
 }
 
 

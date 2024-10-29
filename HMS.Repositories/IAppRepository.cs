@@ -20,6 +20,11 @@ namespace HMS.Repositories
         Task<IEnumerable<ProcedureDto>> GetAllProcedures();
         Task<ApiResponse<ProcedureDto>> DeleteProcedure(int id);
 
+        Task<ApiResponse<ProcedureCatagory>> UpsertProcedureCatagoryDetails(string procedureCatagoryName);
+        Task<ProcedureCatagory> GetProcedureCatagoryById(int id);
+        Task<IEnumerable<ProcedureCatagory>> GetAllProceduresCatagory();
+        Task<ApiResponse<ProcedureCatagory>> DeleteProcedureCatagory(int id);
+
 
         Task<ApiResponse<DoctorsDto>> UpsertDoctorsDetails(DoctorsDto data);
         Task<DoctorsDto> GetDoctorById(int id);

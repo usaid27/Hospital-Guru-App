@@ -42,6 +42,7 @@ public class ReferenceLinks : BaseEntity
 
 public class ProcedureDoctorMapping : BaseEntity
 {
+
     public int DoctorId { get; set; }
     public int ProcedureId { get; set; }
     public virtual DoctorsDto ? Doctor { get; set; }

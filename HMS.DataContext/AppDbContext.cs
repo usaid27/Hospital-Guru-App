@@ -20,6 +20,7 @@ namespace HMS.DataContext
         public DbSet<OtherSpecialities> OtherSpecialities { get; set; }
         public DbSet<SpecialitiesName> SpecialitiesNames { get; set; } 
         public DbSet<ProcedureDto> ProcedureDto { get; set; }
+        public DbSet<ProcedureCatagory> ProcedureCatagory { get; set; }
         public DbSet<DoctorEducation> DoctorEducation { get; set; }
         public DbSet<DoctorsDto> DoctorsDto { get; set; }
         public DbSet<ContactDoctor> ContactDoctors {  get; set; }
